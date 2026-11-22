@@ -1,5 +1,10 @@
 # Exquisite Canvas — clickable mockup
 
+> **Variant: dark map with lanterns.** The whole drawing sits in the dark; only the open spots glow.
+> Tap a light to peek at its neighbours for 8 seconds, then "I have an idea" to draw there, or keep looking.
+> First peek is free, then 1 spark each (mock credits, start with 3). The big lantern (3 sparks) lights a wide area
+> around any point you tap. When you submit, the light spreads out from your tile and the whole drawing is revealed.
+
 A UX/layout mockup for a shared infinite-grid canvas in the spirit of the Surrealist "Exquisite Corpse" game, with AI.
 No backend, no real model: the artwork is one procedurally painted image sliced into tiles, and "generation" is a timed reveal.
 

@@ -19,6 +19,10 @@
 
   const grid = $derived(`background-size:${T * cam.s}px ${T * cam.s}px;background-position:${app.vw / 2 - cam.x * cam.s}px ${app.vh / 2 - cam.y * cam.s}px;`);
   const mt = $derived(app.mine);
+  const M = 7000;
+  // keep lights a readable size on screen at any zoom (clamped in world units)
+  const core = $derived(Math.min(90, Math.max(36, 20 / cam.s)));
+  const emb = $derived(Math.min(64, Math.max(30, 16 / cam.s)));
 </script>
 
 <!-- infinite dotted grid -->
@@ -78,13 +82,64 @@
           <div class="text-[14px] tabular-nums text-paper/45">{secs((t.lockUntil ?? 0) - app.now)} left</div>
         </div>
       </div>
-    {:else if t.status === 'open'}
+    {:else if t.status === 'open' && !app.lantern}
       <div class="absolute rounded-[10px] border-2 border-dashed border-mint/40 flex flex-col items-center justify-center gap-1 text-mint/70" style="left:{x + 8}px;top:{y + 8}px;width:{T - 16}px;height:{T - 16}px">
         <div class="text-[40px] leading-none font-light">+</div>
         <div class="text-[15px]">open</div>
       </div>
     {/if}
   {/each}
+
+  <!-- ===== the dark: one big night with a hole where the lantern shines ===== -->
+  {#if app.darkOn}
+    {@const L = app.light.current}
+    {@const R = Math.max(1, L.r)}
+    <div class="absolute pointer-events-none" out:fade={{ duration: 700 }}
+      style="left:{-M}px;top:{-M}px;width:{2 * M}px;height:{2 * M}px;background:radial-gradient(circle {R}px at {L.x + M}px {L.y + M}px, rgba(255,190,120,.07) 0%, rgba(9,8,14,0) 30%, rgba(9,8,14,.5) 58%, rgba(9,8,14,.9) 82%, #09080e 100%)"></div>
+  {/if}
+
+  {#if app.lantern}
+    <!-- dust, so the dark still feels like a place -->
+    <div class="absolute pointer-events-none opacity-40" style="left:{-M}px;top:{-M}px;width:{2 * M}px;height:{2 * M}px;background-image:radial-gradient(circle, rgba(244,233,216,.35) 2.2px, transparent 2.6px);background-size:{T}px {T}px;background-position:{M}px {M}px"></div>
+
+    <!-- someone just finished: a spark in the dark -->
+    {#each world.filled.filter((t) => t.fresh) as t (key(t.c, t.r))}
+      <div class="absolute pointer-events-none rounded-full" style="left:{(t.c + 0.5) * T - 60}px;top:{(t.r + 0.5) * T - 60}px;width:120px;height:120px;animation:spark 2.2s ease-out forwards"></div>
+    {/each}
+
+    <!-- lights: every open spot glows, people drawing are dim embers -->
+    {#each world.list.filter((t) => t.status !== 'filled') as t (key(t.c, t.r))}
+      {@const k = key(t.c, t.r)}
+      {@const cx = (t.c + 0.5) * T}
+      {@const cy = (t.r + 0.5) * T}
+      {@const isPeek = app.peek?.sel === k}
+      {@const lit = app.lit(t.c, t.r)}
+      {#if t.status === 'open'}
+        <div class="absolute pointer-events-none" style="left:{cx}px;top:{cy}px;transition:opacity .6s;opacity:{app.peek && !lit ? 0.55 : 1}">
+          {#if !isPeek}
+            <div class="absolute rounded-full" style="left:-130px;top:-130px;width:260px;height:260px;background:radial-gradient(circle, rgba(255,186,99,.42) 0%, rgba(255,140,70,.14) 38%, rgba(255,120,60,0) 70%);animation:glow 3.2s ease-in-out {(t.c * 7 + t.r * 3) % 10 * -0.37}s infinite"></div>
+            <div class="absolute rounded-full" style="left:{-core / 2}px;top:{-core / 2}px;width:{core}px;height:{core}px;background:radial-gradient(circle at 40% 38%, #fff8e6 0%, #ffd38a 35%, #ff9b4f 70%, rgba(255,140,70,0) 72%);filter:drop-shadow(0 0 10px rgba(255,180,90,.9))"></div>
+          {/if}
+          {#if app.seen.includes(k) && !isPeek}
+            <div class="absolute rounded-full border-[5px] border-paper/50" style="left:-56px;top:-56px;width:112px;height:112px"></div>
+          {/if}
+        </div>
+        {#if isPeek}
+          <div class="absolute pointer-events-none rounded-[12px] border-[4px] border-dashed border-[#ffd38a]" style="left:{t.c * T + 10}px;top:{t.r * T + 10}px;width:{T - 20}px;height:{T - 20}px;box-shadow:0 0 40px rgba(255,190,110,.35), inset 0 0 40px rgba(255,190,110,.2)">
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <div class="text-[44px] leading-none text-[#ffd38a]">✦</div>
+              <div class="mt-2 font-display text-[26px] text-paper">this spot</div>
+            </div>
+          </div>
+        {/if}
+      {:else}
+        <div class="absolute pointer-events-none" style="left:{cx}px;top:{cy}px">
+          <div class="absolute rounded-full" style="left:-80px;top:-80px;width:160px;height:160px;background:radial-gradient(circle, {t.author?.color}33 0%, transparent 65%)"></div>
+          <div class="absolute rounded-full flex items-center justify-center font-semibold text-ink/80" style="left:{-emb / 2}px;top:{-emb / 2}px;width:{emb}px;height:{emb}px;font-size:{emb * 0.5}px;background:{t.author?.color};opacity:.55">{t.author?.name[0]}</div>
+        </div>
+      {/if}
+    {/each}
+  {/if}
 
   <!-- my finished tile glow -->
   {#if app.lastMine && (app.phase === 'reveal' || app.phase === 'explore')}
@@ -106,4 +161,6 @@
 
 <style>
   @keyframes -global-fadeflash { 0% { opacity: .85 } 100% { opacity: 0 } }
+  @keyframes -global-glow { 0%,100% { transform: scale(.82); opacity: .75 } 50% { transform: scale(1.12); opacity: 1 } }
+  @keyframes -global-spark { 0% { transform: scale(.2); opacity: 1; box-shadow: 0 0 0 0 rgba(255,220,160,.9), 0 0 60px 30px rgba(255,200,130,.6) } 100% { transform: scale(3.2); opacity: 0; box-shadow: 0 0 0 30px rgba(255,220,160,0), 0 0 60px 30px rgba(255,200,130,0) } }
 </style>

@@ -47,7 +47,7 @@ const SHAPE = [
   '...........',
 ];
 
-export const OPEN_LIMIT = 6;
+export const OPEN_LIMIT = 9;
 
 class World {
   tiles = $state<Record<string, Tile>>({});
