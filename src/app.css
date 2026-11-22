@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0f0d17;
+  --color-ink-2: #1a1726;
+  --color-ink-3: #262236;
+  --color-paper: #f4e9d8;
+  --color-coral: #ff6b4a;
+  --color-mint: #7fe0c0;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+html, body, #app { height: 100%; margin: 0; background: var(--color-ink); color: var(--color-paper); overflow: hidden; overscroll-behavior: none; }
+body { font-family: var(--font-sans); -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
+button { cursor: pointer; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+.safe-b { padding-bottom: max(env(safe-area-inset-bottom), 12px); }
+.safe-t { padding-top: max(env(safe-area-inset-top), 10px); }
+@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(255,107,74,.7);} 70% { box-shadow: 0 0 0 28px rgba(255,107,74,0);} 100% { box-shadow: 0 0 0 0 rgba(255,107,74,0);} }
+@keyframes dash { to { stroke-dashoffset: -40; } }
+@keyframes shimmer { 0% { transform: translateY(-100%);} 100% { transform: translateY(100%);} }
+@keyframes blink { 0%,100% {opacity:1} 50% {opacity:.35} }
