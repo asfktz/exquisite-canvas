@@ -22,3 +22,31 @@ button { cursor: pointer; }
 @keyframes dash { to { stroke-dashoffset: -40; } }
 @keyframes shimmer { 0% { transform: translateY(-100%);} 100% { transform: translateY(100%);} }
 @keyframes blink { 0%,100% {opacity:1} 50% {opacity:.35} }
+
+/* ---------- inviting edge ---------- */
+@property --reach { syntax: '<percentage>'; inherits: true; initial-value: 42%; }
+@keyframes breathe { 0%,100% { --reach: 26%; opacity: .5 } 50% { --reach: 64%; opacity: .78 } }
+@keyframes breathe-dream { 0%,100% { --reach: 62% } 50% { --reach: 96% } }
+@keyframes seamglow { 0%,100% { opacity: .25 } 50% { opacity: 1 } }
+@keyframes floaty { 0%,100% { transform: translate(0,0) } 33% { transform: translate(2px,-4px) } 66% { transform: translate(-2px,2px) } }
+@keyframes bud { 0%,100% { transform: scale(.82); opacity: .55 } 50% { transform: scale(1.06); opacity: 1 } }
+@keyframes stitch-in { from { stroke-dashoffset: 30; opacity: 0 } 30% { opacity: 1 } to { stroke-dashoffset: 0; opacity: 1 } }
+@keyframes settle { 0% { transform: scale(1.06) } 60% { transform: scale(.985) } 100% { transform: scale(1) } }
+@keyframes handle-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,214,160,.55) } 60% { box-shadow: 0 0 0 16px rgba(255,214,160,0) } }
+@keyframes dot { 0%,80%,100% { opacity: .25 } 40% { opacity: 1 } }
+@keyframes fadeflash { 0% { opacity: .85 } 100% { opacity: 0 } }
+
+.ghost { animation: breathe 4.2s ease-in-out infinite; filter: saturate(.75) brightness(.95); }
+.ghost.busy { animation: none; --reach: 100%; opacity: .7; transition: opacity .6s; }
+.dream { animation: breathe-dream 5s ease-in-out infinite; opacity: .72; }
+.seam { animation: seamglow 3.2s ease-in-out infinite; mix-blend-mode: screen; }
+.whisper { transform: translate(-50%, -50%); text-align: center; }
+.whisper > span { animation: floaty 6s ease-in-out infinite; animation-delay: inherit; }
+.handle { transform: translate(-50%, -50%); }
+.handle > span { animation: handle-pulse 2s ease-out infinite; }
+.handle.on > span { animation: none; background: #ffd166; }
+.bud > div { animation: bud 2.4s ease-in-out infinite; }
+.stitch { stroke: #ff6b4a; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 30; stroke-dashoffset: 30; animation: stitch-in .35s ease-out forwards; filter: drop-shadow(0 0 4px rgba(255,107,74,.8)); }
+.settle { animation: settle .7s ease-out; }
+.dots i { display: inline-block; width: 3px; height: 3px; margin: 0 1px; border-radius: 9px; background: currentColor; animation: dot 1.2s infinite; }
+.dots i:nth-child(2) { animation-delay: .2s } .dots i:nth-child(3) { animation-delay: .4s }

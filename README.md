@@ -27,3 +27,12 @@ Concurrency is simulated: only 6 empty tiles are open at a time, other "artists"
 
 ## Stack
 Vite + Svelte 5 + TypeScript, Tailwind 4, Svelte `Tween` / transitions, `@use-gesture/vanilla` via a Svelte action (`src/lib/gestures.ts`). The grid is a CSS-transformed div.
+
+## Inviting edge (default view)
+The whole map is visible; open edges invite you to continue. Four takes, switchable at the bottom (or `?v=`):
+- **Whisper** (`?v=whisper`): ideas drawn from the neighbours drift over each open edge. Tap one to see a sketch in place, paint it (1 credit), stitch it in.
+- **Dream** (`?v=dream`): empty spots slowly cycle through ghost "dreams" of what could go there. Tap to catch one.
+- **Pull** (`?v=pull`): grab the glowing seam handle and drag the painting outward; let go past halfway.
+- **Bloom** (`?v=bloom`): tap an edge and four painted takes bloom in a 2x2 right on the map; pick one and it gets stitched in.
+Credits are mocked (tap the ✦ pill to top up). Other people keep adding in the background. The previous mockup is at `?legacy`.
+Code: `src/edge/`.
