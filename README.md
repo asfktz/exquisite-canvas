@@ -27,3 +27,14 @@ Concurrency is simulated: only 6 empty tiles are open at a time, other "artists"
 
 ## Stack
 Vite + Svelte 5 + TypeScript, Tailwind 4, Svelte `Tween` / transitions, `@use-gesture/vanilla` via a Svelte action (`src/lib/gestures.ts`). The grid is a CSS-transformed div.
+
+## Inviting edge (this branch)
+No mystery: the whole picture is visible and the open edges themselves invite you to continue.
+Tap (or pull) an empty cell next to the picture and 4 attempts appear right in place, seams and all.
+Pick one and it is stitched in; the new edges it opens light up. Each set of 4 costs 1 mock credit.
+Four takes on the invitation (`?v=` or the menu next to the title):
+- **breathe**: the painting bleeds a little past its edge and breathes; swipe the 4 attempts like a strip.
+- **dream**: empty cells quietly cycle faint continuations; tap to wake one, tap/swipe for the next.
+- **pull**: grab an edge and pull the picture out like fabric; flick attempts off the deck.
+- **grow**: seams glow like embers; tap a seam and the attempt grows out of it (tap another seam to regrow).
+Code: `src/edge/`.

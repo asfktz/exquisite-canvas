@@ -31,6 +31,48 @@
       <path d="M-12 40 L-10 58 M12 40 L10 58" stroke="#2a1d3a" stroke-width="2" />
       <rect x="-13" y="58" width="26" height="18" rx="3" fill="#8a5a3c" stroke="#2a1d3a" stroke-width="3" />
     </g>
+  {:else if obj === 4}
+    <!-- glass lighthouse -->
+    <g transform="translate(128 128)">
+      <path d="M-70 -70 L-8 -52 L-8 -40 L-70 -26 Z M70 -70 L8 -52 L8 -40 L70 -26 Z" fill="#fff3c4" opacity=".28" />
+      <path d="M-20 78 L-12 -40 L12 -40 L20 78 Z" fill="#f4e9d8" stroke="#2a1d3a" stroke-width="4" />
+      <path d="M-17 30 L17 30 L18.5 50 L-18.5 50 Z M-14 -6 L14 -6 L15 12 L-15 12 Z" fill="#ff6b4a" />
+      <rect x="-16" y="-62" width="32" height="22" rx="3" fill="#ffd166" stroke="#2a1d3a" stroke-width="4" />
+      <path d="M-20 -62 L0 -80 L20 -62 Z" fill="#c3a6ff" stroke="#2a1d3a" stroke-width="4" />
+      <circle cx="0" cy="-51" r="26" fill="#ffd166" opacity=".22" />
+      <path d="M-34 80 Q0 66 34 80" stroke="#2a1d3a" stroke-width="4" fill="none" />
+    </g>
+  {:else if obj === 5}
+    <!-- whale swimming through the air -->
+    <g transform="translate(128 126)">
+      <path d="M-78 4 C-70 -40 20 -48 58 -10 C70 0 74 10 70 18 C40 40 -60 44 -78 4 Z" fill="#4aa3df" stroke="#2a1d3a" stroke-width="4" />
+      <path d="M-72 18 C-40 36 30 36 66 18 C40 30 -40 32 -72 18 Z" fill="#dff3ff" />
+      <path d="M58 -10 L92 -40 L84 -6 L96 14 L66 6" fill="#4aa3df" stroke="#2a1d3a" stroke-width="4" stroke-linejoin="round" />
+      <circle cx="-48" cy="-4" r="5" fill="#120c1d" />
+      <path d="M-30 -42 Q-36 -64 -24 -70 M-30 -42 Q-22 -62 -10 -62" stroke="#dff3ff" stroke-width="4" fill="none" stroke-linecap="round" />
+      <path d="M-10 20 Q0 34 14 22" stroke="#2a1d3a" stroke-width="3" fill="none" />
+    </g>
+  {:else if obj === 6}
+    <!-- lantern tree -->
+    <g transform="translate(128 132)">
+      <path d="M0 80 L0 -10 M0 20 L-30 -20 M0 6 L28 -28 M0 -10 L-6 -50" stroke="#3a2433" stroke-width="7" stroke-linecap="round" fill="none" />
+      {#each [[-30, -20, '#ffd166'], [28, -28, '#ff8fa3'], [-6, -50, '#ffd166'], [14, -4, '#7fe0c0'], [-18, 4, '#ff6b4a']] as [x, y, c]}
+        <circle cx={x} cy={y} r="22" fill={c as string} opacity=".2" />
+        <line x1={x} y1={(y as number) - 10} x2={x} y2={(y as number) - 2} stroke="#2a1d3a" stroke-width="2" />
+        <rect x={(x as number) - 7} y={(y as number) - 2} width="14" height="18" rx="5" fill={c as string} stroke="#2a1d3a" stroke-width="3" />
+      {/each}
+    </g>
+  {:else if obj === 7}
+    <!-- giant snail carrying a garden -->
+    <g transform="translate(128 140)">
+      <path d="M-80 46 C-80 30 -60 26 -40 30 L60 30 C76 30 84 46 70 50 L-70 52 Z" fill="#e0a948" stroke="#2a1d3a" stroke-width="4" />
+      <path d="M-70 36 L-80 4 M-62 34 L-64 0" stroke="#2a1d3a" stroke-width="4" stroke-linecap="round" />
+      <circle cx="-80" cy="2" r="5" fill="#2a1d3a" /><circle cx="-64" cy="-2" r="5" fill="#2a1d3a" />
+      <circle cx="10" cy="-2" r="46" fill="#c3a6ff" stroke="#2a1d3a" stroke-width="4" />
+      <path d="M10 -2 m0 0 a10 10 0 1 1 10 10 a20 20 0 1 1 -22 -20 a32 32 0 1 1 34 32" stroke="#2a1d3a" stroke-width="3" fill="none" />
+      <path d="M-10 -46 L-10 -70 M10 -48 L10 -82 M28 -44 L30 -66" stroke="#3f8f5f" stroke-width="4" />
+      <circle cx="-10" cy="-74" r="8" fill="#ff8fa3" /><circle cx="10" cy="-86" r="9" fill="#ffd166" /><circle cx="30" cy="-70" r="7" fill="#7fe0c0" />
+    </g>
   {:else}
     <!-- house on stilts with a lit window -->
     <g transform="translate(128 120)">
