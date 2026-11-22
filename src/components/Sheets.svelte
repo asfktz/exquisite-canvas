@@ -99,7 +99,7 @@
       <div class="text-[34px]">⌛</div>
       <div class="font-display text-[24px] mt-1">Your tile was released</div>
       <div class="text-[14px] text-paper/55 mt-2">You were away for a while, so someone else got the chance to draw it. There are still open spots.</div>
-      <button class="mt-5 w-full rounded-2xl bg-coral py-3.5 text-[15px] font-semibold text-ink" onclick={() => app.startCompose()}>Find me a new tile</button>
+      <button class="mt-5 w-full rounded-2xl bg-coral py-3.5 text-[15px] font-semibold text-ink" onclick={() => (app.variant === 4 ? app.backToPeek() : app.startCompose())}>{app.variant === 4 ? 'Pick another spot' : 'Find me a new tile'}</button>
       <button class="mt-2 w-full rounded-2xl bg-ink-3 py-3 text-[14px]" onclick={() => app.explore()}>Just look around</button>
     </div>
   </div>

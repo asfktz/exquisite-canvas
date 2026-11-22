@@ -11,6 +11,7 @@
   import ComposerV2 from './components/ComposerV2.svelte';
   import ComposerV3 from './components/ComposerV3.svelte';
   import Sheets from './components/Sheets.svelte';
+  import Keyhole from './components/Keyhole.svelte';
 
   let menu = $state(false);
   let ready = $state(false);
@@ -44,9 +45,11 @@
   $effect(() => {
     const _ = [app.vw, app.vh, app.phase];
     if (app.masked && app.mine) app.cam.set(app.composeTarget(app.mine), { duration: 350 });
+    if (app.phase === 'peek') app.cam.set(app.peekCam(), { duration: 350 });
   });
 
   const variants: { v: Variant; name: string; note: string }[] = [
+    { v: 4, name: 'Keyhole', note: 'Map hidden. Press and drag to peek through a small lens, then pick your spot.' },
     { v: 1, name: 'Immersive', note: 'Splash, then straight into your tile. Chat-style prompt bar.' },
     { v: 2, name: 'Guided', note: 'Tile on top, step-by-step sheet with what neighbours drew.' },
     { v: 3, name: 'Map first', note: 'Land on a fogged map, tap your tile. Edge labels around it.' },
@@ -101,9 +104,12 @@
     </div>
   {/if}
 
+  <!-- ===== keyhole: choose a spot on the hidden map ===== -->
+  {#if ready && app.phase === 'peek'}<Keyhole />{/if}
+
   <!-- ===== composing ===== -->
   {#if app.masked}
-    {#if app.variant === 1}<ComposerV1 />{:else if app.variant === 2}<ComposerV2 />{:else}<ComposerV3 />{/if}
+    {#if app.variant === 2}<ComposerV2 />{:else if app.variant === 3}<ComposerV3 />{:else}<ComposerV1 />{/if}
   {/if}
 
   <!-- ===== reveal ===== -->
@@ -126,7 +132,7 @@
       <div class="absolute inset-x-0 bottom-0 safe-b flex justify-center px-4" in:fly={{ y: 40 }}>
         <div class="flex items-center gap-2 rounded-full bg-ink-2/90 backdrop-blur border border-paper/10 p-1.5">
           <button class="rounded-full px-4 py-2.5 text-[14px] text-paper/80" onclick={() => app.cam.set(app.fitAll(0.6), { duration: 700 })}>Fit</button>
-          <button class="rounded-full bg-coral px-5 py-2.5 text-[14px] font-semibold text-ink" onclick={() => app.startCompose()}>Draw another tile</button>
+          <button class="rounded-full bg-coral px-5 py-2.5 text-[14px] font-semibold text-ink" onclick={() => (app.variant === 4 ? app.backToPeek(true) : app.startCompose())}>Draw another tile</button>
         </div>
       </div>
       <div class="absolute bottom-[86px] inset-x-0 text-center text-[12px] text-paper/35 pointer-events-none safe-b">Drag, pinch, tap a tile</div>

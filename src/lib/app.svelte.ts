@@ -2,9 +2,10 @@ import { Tween } from 'svelte/motion';
 import { cubicInOut, cubicOut, linear } from 'svelte/easing';
 import { T } from './art';
 import { world, key, randomPerson, type Tile } from './world.svelte';
+import { keyhole } from './keyhole.svelte';
 
-export type Phase = 'intro' | 'compose' | 'drawing' | 'review' | 'reveal' | 'explore' | 'released';
-export type Variant = 1 | 2 | 3;
+export type Phase = 'peek' | 'intro' | 'compose' | 'drawing' | 'review' | 'reveal' | 'explore' | 'released';
+export type Variant = 1 | 2 | 3 | 4;
 
 const LOCK_MS = 5 * 60 * 1000;
 export const IDLE_WARN_MS = 45 * 1000;
@@ -13,8 +14,8 @@ export const IDLE_RELEASE_MS = 65 * 1000;
 const OBJ_WORDS: [RegExp, number][] = [[/fish|sea|water|swim|whale/i, 0], [/moon|night|sleep|dream/i, 1], [/balloon|fly|sky|bird|air/i, 2], [/house|home|window|light|lamp/i, 3]];
 
 function readVariant(): Variant {
-  try { const v = Number(new URLSearchParams(location.search).get('v')); if (v === 2 || v === 3) return v; } catch {}
-  return 1;
+  try { const v = Number(new URLSearchParams(location.search).get('v')); if (v === 1 || v === 2 || v === 3) return v; } catch {}
+  return 4; // keyhole is the default on this branch
 }
 
 class AppState {
@@ -92,6 +93,7 @@ class AppState {
     world.reset();
     this.prompt = ''; this.tries = []; this.sheet = null; this.selected = null; this.lastMine = null; this.revealCaption = false;
     this.progress.set(0, { duration: 0 });
+    if (this.variant === 4) { keyhole.reset(); this.phase = 'peek'; this.cam.set(this.peekCam(), { duration: 0 }); return; }
     this.phase = 'intro';
     if (this.variant === 3) world.assign();
     this.cam.set(this.fitAll(0.8, this.variant === 3 ? 170 : 0), { duration: 0 });
@@ -101,6 +103,27 @@ class AppState {
     this.variant = v;
     try { const u = new URL(location.href); u.searchParams.set('v', String(v)); history.replaceState(null, '', u); } catch {}
     this.restart();
+  }
+
+  /** camera for the covered keyhole map: everything incl. open spots fits above the bottom bar */
+  peekCam() {
+    const ts = world.list;
+    const xs = ts.map((t) => t.c), ys = ts.map((t) => t.r);
+    const c0 = Math.min(...xs), c1 = Math.max(...xs), r0 = Math.min(...ys), r1 = Math.max(...ys);
+    const top = 120, bottom = 170, pad = 0.35;
+    const w = (c1 - c0 + 1 + pad * 2) * T, h = (r1 - r0 + 1 + pad * 2) * T;
+    const s = Math.min((this.vw - 16) / w, (this.vh - top - bottom) / h);
+    const cx = ((c0 + c1 + 1) / 2) * T, cy = ((r0 + r1 + 1) / 2) * T;
+    return { x: cx, y: cy - (top - bottom) / 2 / s, s };
+  }
+
+  /** back to the covered map to pick another spot */
+  backToPeek(refill = false) {
+    world.release();
+    if (refill) keyhole.refill();
+    this.sheet = null; this.selected = null; this.revealCaption = false;
+    this.phase = 'peek';
+    this.cam.set(this.peekCam(), { duration: 900, easing: cubicInOut });
   }
 
   startCompose(prefer?: string) {
