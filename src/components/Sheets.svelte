@@ -84,6 +84,24 @@
   </div>
 {/if}
 
+{#if app.sheet === 'credits'}
+  <div class="absolute inset-0 z-30 bg-ink/60" onclick={() => (app.sheet = null)} role="presentation" transition:fade={{ duration: 200 }}></div>
+  <div class="absolute inset-x-0 bottom-0 z-40 rounded-t-[28px] bg-ink-2 border-t border-paper/10 px-5 pt-3 safe-b shadow-[0_-20px_60px_rgba(0,0,0,.6)]" transition:fly={{ y: 320, duration: 400, easing: cubicOut }}>
+    <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-paper/20"></div>
+    <div class="font-display text-[24px] leading-tight">✦ Credits</div>
+    <div class="text-[14px] text-paper/60 mt-1">You have <b class="text-paper">{app.credits}</b>. A new hand costs ✦1, a golden edge costs ✦2. Drawing is always free.</div>
+    <div class="mt-4 grid grid-cols-3 gap-2">
+      {#each [[5, '$0.99'], [15, '$1.99'], [40, '$3.99']] as [n, price], i}
+        <button class="rounded-2xl border {i === 1 ? 'border-[#ffd166] bg-[#ffd166]/10' : 'border-paper/15 bg-ink'} py-3 flex flex-col items-center" onclick={() => { app.credits += Number(n); app.sheet = null; app.toast(`+${n} credits (pretend)`, '#ffd166'); }}>
+          <span class="text-[20px] font-semibold"><span class="text-[#ffd166]">✦</span>{n}</span>
+          <span class="text-[12px] text-paper/55">{price}</span>
+        </button>
+      {/each}
+    </div>
+    <div class="mt-3 text-center text-[12px] text-paper/40">Every tile you finish earns ✦1. Mock store, nothing is charged.</div>
+  </div>
+{/if}
+
 {#if app.idleWarn}
   <div class="absolute inset-x-0 top-16 z-40 flex justify-center px-4" transition:fly={{ y: -30 }}>
     <div class="flex items-center gap-3 rounded-2xl bg-paper text-ink px-4 py-3 shadow-2xl max-w-sm">
@@ -99,7 +117,7 @@
       <div class="text-[34px]">⌛</div>
       <div class="font-display text-[24px] mt-1">Your tile was released</div>
       <div class="text-[14px] text-paper/55 mt-2">You were away for a while, so someone else got the chance to draw it. There are still open spots.</div>
-      <button class="mt-5 w-full rounded-2xl bg-coral py-3.5 text-[15px] font-semibold text-ink" onclick={() => app.startCompose()}>Find me a new tile</button>
+      <button class="mt-5 w-full rounded-2xl bg-coral py-3.5 text-[15px] font-semibold text-ink" onclick={() => app.openHand()}>Deal me new cards</button>
       <button class="mt-2 w-full rounded-2xl bg-ink-3 py-3 text-[14px]" onclick={() => app.explore()}>Just look around</button>
     </div>
   </div>

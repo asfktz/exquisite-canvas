@@ -47,7 +47,7 @@ const SHAPE = [
   '...........',
 ];
 
-export const OPEN_LIMIT = 6;
+export const OPEN_LIMIT = 11;
 
 class World {
   tiles = $state<Record<string, Tile>>({});
@@ -61,7 +61,7 @@ class World {
     SHAPE.forEach((row, ri) => [...row].forEach((ch, ci) => {
       if (ch !== '#') return;
       const c = C0 + ci, r = R0 + ri;
-      t[key(c, r)] = { c, r, status: 'filled', author: { name: pick(NAMES, i * 5), color: pick(COLORS, i) }, prompt: pick(PROMPTS, i * 3), ago: pick(AGO, i) };
+      t[key(c, r)] = { c, r, status: 'filled', author: { name: pick(NAMES, i * 5), color: pick(COLORS, i) }, prompt: pick(PROMPTS, i * 7), ago: pick(AGO, i) };
       i++;
     }));
     this.tiles = t;
@@ -69,7 +69,7 @@ class World {
     this.refillOpen();
     // two of the open ones are being drawn by other people
     const opens = this.list.filter((x) => x.status === 'open');
-    opens.slice(0, 2).forEach((o, j) => { o.status = 'locked'; o.author = randomPerson(); o.lockUntil = Date.now() + (130 + j * 70) * 1000; });
+    opens.slice(0, 3).forEach((o, j) => { o.status = 'locked'; o.author = randomPerson(); o.lockUntil = Date.now() + (130 + j * 70) * 1000; });
   }
 
   get list() { return Object.values(this.tiles); }
@@ -146,6 +146,11 @@ class World {
     const g = free[Math.floor(Math.random() * free.length)];
     if (g) { g.status = 'locked'; g.author = randomPerson(); g.lockUntil = Date.now() + (90 + Math.random() * 180) * 1000; }
     return done;
+  }
+
+  /** how many of the 8 surrounding tiles are drawn */
+  filledAround(c: number, r: number) {
+    return [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].filter(([a, b]) => this.isFilled(c + a, r + b)).length;
   }
 
   neighbours(c: number, r: number) {

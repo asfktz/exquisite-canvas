@@ -11,6 +11,8 @@
   import ComposerV2 from './components/ComposerV2.svelte';
   import ComposerV3 from './components/ComposerV3.svelte';
   import Sheets from './components/Sheets.svelte';
+  import Hand from './components/Hand.svelte';
+  import CardFlip from './components/CardFlip.svelte';
 
   let menu = $state(false);
   let ready = $state(false);
@@ -31,13 +33,16 @@
     const clock = setInterval(() => {
       app.now = Date.now();
       if ((app.phase === 'compose' || app.phase === 'review') && (app.idle > IDLE_RELEASE_MS || app.lockLeft <= 0)) app.release();
+      if (app.phase === 'hand') app.handTick();
     }, 250);
+    // people glance at your cards, and sometimes grab one
+    const pulse = setInterval(() => app.handPulse(), 4500);
     // other artists keep working in the background
     const others = setInterval(() => {
-      if (app.phase === 'drawing' || app.phase === 'reveal' || app.phase === 'intro') return;
+      if (app.phase === 'drawing' || app.phase === 'reveal' || app.phase === 'intro' || app.phase === 'hand') return;
       app.simulateNeighbour();
     }, 14000);
-    return () => { clearInterval(clock); clearInterval(others); window.removeEventListener('resize', onResize); };
+    return () => { clearInterval(clock); clearInterval(others); clearInterval(pulse); window.removeEventListener('resize', onResize); };
   });
 
   // keep the compose framing right when the viewport changes (rotation, keyboard)
@@ -71,37 +76,29 @@
   {/if}
 
   <!-- ===== intro ===== -->
-  {#if ready && app.phase === 'intro' && app.variant !== 3}
+  {#if ready && app.phase === 'intro'}
     <div class="absolute inset-0 z-20 flex items-end sm:items-center justify-center bg-gradient-to-t from-ink via-ink/70 to-ink/20 px-4 pb-8 safe-b" transition:fade={{ duration: 500 }}>
       <div class="w-full max-w-sm text-center" in:fly={{ y: 40, duration: 700, delay: 200, easing: cubicOut }}>
         <div class="font-display text-[46px] leading-none tracking-tight">Exquisite</div>
-        <div class="mt-3 text-[16px] text-paper/75 leading-relaxed">A drawing nobody planned. Each tile is drawn by a different person, who only sees the edges of their neighbours.</div>
+        <div class="mt-3 text-[16px] text-paper/75 leading-relaxed">A drawing nobody planned. Each tile is drawn by a different person, who only sees the edges around it.</div>
         <div class="mt-4 flex items-center justify-center gap-4 text-[13px] text-paper/55">
           <span><b class="text-paper">{world.filled.length}</b> tiles</span>
           <span><b class="text-paper">{world.artists}</b> artists</span>
           <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-mint" style="animation:blink 1.4s infinite"></span><b class="text-paper">{world.drawingNow}</b> drawing now</span>
         </div>
-        <button class="mt-6 w-full rounded-2xl bg-coral py-4 text-[17px] font-semibold text-ink active:scale-[.98] transition-transform" onclick={() => app.startCompose()}>Find me a spot ✦</button>
-        <div class="mt-3 text-[12px] text-paper/40">You'll get a tile for 5 minutes. The whole drawing is revealed when you're done.</div>
+        <button class="mt-6 w-full rounded-2xl bg-coral py-4 text-[17px] font-semibold text-ink active:scale-[.98] transition-transform" onclick={() => app.openHand()}>Deal me a hand ✦</button>
+        <div class="mt-3 text-[12px] text-paper/40">You'll get a few open spots to choose from, edges only. The whole drawing is revealed when you add yours.</div>
       </div>
     </div>
   {/if}
 
-  {#if ready && app.phase === 'intro' && app.variant === 3}
-    <div class="absolute inset-x-0 top-0 safe-t px-5 pointer-events-none" in:fade>
-      <div class="mt-2 font-display text-[30px] leading-none">Exquisite</div>
-      <div class="mt-1 text-[13px] text-paper/55">{world.filled.length} tiles · {world.drawingNow} drawing now · the picture stays hidden until you add yours</div>
-    </div>
-    <div class="absolute inset-x-0 bottom-0 z-10 px-3 safe-b" in:fly={{ y: 80, duration: 500 }}>
-      <div class="mx-auto max-w-md rounded-3xl bg-ink-2/95 border border-paper/10 p-4 flex items-center gap-3">
-        <div class="h-11 w-11 shrink-0 rounded-full bg-coral/20 flex items-center justify-center text-coral text-[20px]">✦</div>
-        <div class="flex-1 text-[14px] leading-snug"><b>Your spot is ready.</b><br /><span class="text-paper/55">Tap the glowing tile, or any green one.</span></div>
-        <button class="rounded-xl bg-coral px-4 py-2.5 text-[14px] font-semibold text-ink" onclick={() => app.startCompose()}>Go</button>
-      </div>
-    </div>
-  {/if}
+  <!-- ===== card hand ===== -->
+  {#if app.phase === 'hand'}<Hand />{/if}
 
   <!-- ===== composing ===== -->
+  {#if app.phase === 'compose' && !app.flip}
+    <button class="absolute left-3 z-20 flex items-center gap-1 rounded-full bg-ink-2/90 border border-paper/10 px-3 h-9 text-[13px] text-paper/75" style="top:max(env(safe-area-inset-top),10px)" onclick={() => app.backToHand()} in:fade>← Cards</button>
+  {/if}
   {#if app.masked}
     {#if app.variant === 1}<ComposerV1 />{:else if app.variant === 2}<ComposerV2 />{:else}<ComposerV3 />{/if}
   {/if}
@@ -126,12 +123,14 @@
       <div class="absolute inset-x-0 bottom-0 safe-b flex justify-center px-4" in:fly={{ y: 40 }}>
         <div class="flex items-center gap-2 rounded-full bg-ink-2/90 backdrop-blur border border-paper/10 p-1.5">
           <button class="rounded-full px-4 py-2.5 text-[14px] text-paper/80" onclick={() => app.cam.set(app.fitAll(0.6), { duration: 700 })}>Fit</button>
-          <button class="rounded-full bg-coral px-5 py-2.5 text-[14px] font-semibold text-ink" onclick={() => app.startCompose()}>Draw another tile</button>
+          <button class="rounded-full bg-coral px-5 py-2.5 text-[14px] font-semibold text-ink" onclick={() => app.openHand()}>Draw another tile</button>
         </div>
       </div>
       <div class="absolute bottom-[86px] inset-x-0 text-center text-[12px] text-paper/35 pointer-events-none safe-b">Drag, pinch, tap a tile</div>
     {/if}
   {/if}
+
+  {#if app.flip}{#key app.flip}<CardFlip />{/key}{/if}
 
   <Sheets />
 
@@ -160,6 +159,8 @@
       <div class="px-2 pb-1 text-[11px] uppercase tracking-widest text-paper/40">Simulate</div>
       <div class="grid grid-cols-2 gap-1.5">
         <button class="rounded-xl bg-ink-3 px-2 py-2 text-[12px]" onclick={() => { app.simulateNeighbour(); menu = false; }}>Someone finishes</button>
+        <button class="rounded-xl bg-ink-3 px-2 py-2 text-[12px]" onclick={() => { app.steals = 0; for (let i = 0; i < 6 && app.steals === 0; i++) app.handPulse(); menu = false; }}>Someone takes a card</button>
+        <button class="rounded-xl bg-ink-3 px-2 py-2 text-[12px]" onclick={() => { app.credits = 0; app.freeShuffles = 0; menu = false; }}>Out of credits</button>
         <button class="rounded-xl bg-ink-3 px-2 py-2 text-[12px]" onclick={() => { app.lastActive = Date.now() - 46000; menu = false; }}>I went idle</button>
         <button class="rounded-xl bg-ink-3 px-2 py-2 text-[12px]" onclick={() => { app.explore(); menu = false; }}>Skip to explore</button>
         <button class="rounded-xl bg-ink-3 px-2 py-2 text-[12px]" onclick={() => { app.restart(); menu = false; }}>Restart</button>

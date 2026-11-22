@@ -2,7 +2,7 @@
   import { fade } from 'svelte/transition';
   import { T, W, H, C0, R0 } from '../lib/art';
   import { world, key } from '../lib/world.svelte';
-  import { app } from '../lib/app.svelte';
+  import { app, PEEK } from '../lib/app.svelte';
   import ObjectArt from './ObjectArt.svelte';
 
   const cam = $derived(app.cam.current);
@@ -97,10 +97,10 @@
     <div class="absolute pointer-events-none border-[3px] border-paper rounded-[3px]" style="left:{c * T}px;top:{r * T}px;width:{T}px;height:{T}px"></div>
   {/if}
 
-  <!-- fog of war: only ~15% of each neighbour is visible while composing -->
+  <!-- fog of war: only PEEK of each neighbour is visible while composing (same as on the card) -->
   {#if app.masked && mt}
     <div out:fade={{ duration: 900 }} in:fade={{ duration: 600 }} class="absolute pointer-events-none rounded-[14px]"
-      style="left:{(mt.c - 0.15) * T}px;top:{(mt.r - 0.15) * T}px;width:{T * 1.3}px;height:{T * 1.3}px;box-shadow:0 0 0 200000px #0f0d17, inset 0 0 22px 10px #0f0d17"></div>
+      style="left:{(mt.c - PEEK) * T}px;top:{(mt.r - PEEK) * T}px;width:{T * (1 + 2 * PEEK)}px;height:{T * (1 + 2 * PEEK)}px;box-shadow:0 0 0 200000px #0f0d17, inset 0 0 22px 10px #0f0d17"></div>
   {/if}
 </div>
 
