@@ -1,5 +1,11 @@
 # Exquisite Canvas — clickable mockup
 
+> **Branch `variant/expanding-fog` (variant A):** the map is hidden under an RTS-style fog.
+> On entry you see your 8 neighbours fully and a hazy ring beyond them; everything else is dark, with only colour blobs glowing through.
+> Submitting a tile clears the fog around it (5×5 by default, switchable to 3×3 / 7×7 in the ⋯ menu) with a ripple.
+> Mock credits: start with 5, each drawing attempt costs 1, peeking at a single fogged tile costs 2, and running out opens a mock pack sheet.
+> Code: `src/lib/fog.svelte.ts` (state, visibility, credits) and `src/components/FogLayer.svelte` (animated fog canvas).
+
 A UX/layout mockup for a shared infinite-grid canvas in the spirit of the Surrealist "Exquisite Corpse" game, with AI.
 No backend, no real model: the artwork is one procedurally painted image sliced into tiles, and "generation" is a timed reveal.
 

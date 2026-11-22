@@ -45,7 +45,7 @@
 <div class="absolute inset-x-0 bottom-0 safe-b px-4">
   {#if app.phase === 'compose'}
     <form in:fly={{ y: 40 }} class="mx-auto flex max-w-md items-center gap-2 rounded-full bg-paper text-ink p-1.5 pl-5 shadow-[0_10px_40px_rgba(0,0,0,.5)]" onsubmit={(e) => { e.preventDefault(); app.draw(); }}>
-      <input bind:value={app.prompt} oninput={app.touch} placeholder="Continue the edges with…" class="min-w-0 flex-1 bg-transparent py-2 text-[16px] outline-none placeholder:text-ink/40" />
+      <input bind:value={app.prompt} oninput={app.touch} placeholder="Continue your neighbours with…" class="min-w-0 flex-1 bg-transparent py-2 text-[16px] outline-none placeholder:text-ink/40" />
       <button disabled={!app.prompt.trim()} class="rounded-full bg-ink px-4 py-2.5 text-[14px] font-semibold text-paper disabled:opacity-30">Draw</button>
     </form>
     <div class="mt-2 text-center text-[12px] text-paper/45">Labels show what each neighbour asked for</div>

@@ -5,6 +5,7 @@
   import { world, key } from '../lib/world.svelte';
   import { secs } from '../lib/bits';
   import TileThumb from './TileThumb.svelte';
+  import { fog, PACKS, PEEK_COST } from '../lib/fog.svelte';
 
   let copied = $state(false);
   const mineDone = $derived(app.lastMine ? world.tiles[app.lastMine] : null);
@@ -47,9 +48,9 @@
     </div>
     <div class="mt-2 grid grid-cols-2 gap-2">
       <button class="rounded-2xl bg-coral py-3.5 text-[15px] font-semibold text-ink" onclick={() => share(link)}>Share link</button>
-      <button class="rounded-2xl bg-ink-3 py-3.5 text-[15px]" onclick={() => app.explore()}>Explore drawing</button>
+      <button class="rounded-2xl bg-ink-3 py-3.5 text-[15px]" onclick={() => app.explore()}>See what I uncovered</button>
     </div>
-    <div class="mt-3 text-center text-[12px] text-paper/40">We'll show you how the drawing grows around your tile.</div>
+    <div class="mt-3 text-center text-[12px] text-paper/40">{100 - fog.seenPct}% of the drawing is still in the fog.</div>
   </div>
 {/if}
 
@@ -81,6 +82,47 @@
         <button class="w-full rounded-xl bg-coral py-3 text-[15px] font-semibold text-ink" onclick={() => app.startCompose(app.selected!)}>Draw this tile ✦</button>
       {/if}
     </div>
+  </div>
+{/if}
+
+{#if app.sheet === 'fog' && sel}
+  <div class="absolute inset-x-0 bottom-0 z-30 px-3 safe-b" transition:fly={{ y: 200, duration: 300 }}>
+    <div class="mx-auto max-w-md rounded-3xl bg-ink-2/95 backdrop-blur border border-paper/10 p-4 shadow-2xl">
+      <div class="flex gap-3 items-center">
+        <div class="h-16 w-16 shrink-0 rounded-xl overflow-hidden relative">
+          <div class="absolute inset-[-8px]" style="filter:blur(8px)"><TileThumb c={sel.c} r={sel.r} size={80} radius={0} /></div>
+          <div class="absolute inset-0 bg-ink/40"></div>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="text-[15px]">Hidden in the fog</div>
+          <div class="text-[13px] text-paper/55 mt-0.5 leading-snug">Someone drew here. Draw a tile nearby to clear the fog, or peek at just this one.</div>
+        </div>
+      </div>
+      <div class="mt-3 grid grid-cols-2 gap-2">
+        <button class="rounded-xl bg-ink-3 py-2.5 text-[14px]" onclick={() => { if (fog.peek(sel.c, sel.r)) { app.sheet = 'info'; } else app.sheet = 'credits'; }}>Peek · {PEEK_COST} ✦</button>
+        <button class="rounded-xl bg-coral py-2.5 text-[14px] font-semibold text-ink" onclick={() => app.startCompose(undefined, { c: sel.c, r: sel.r })}>Draw nearby</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if app.sheet === 'credits'}
+  <div class="absolute inset-0 z-40 bg-ink/60" onclick={() => (app.sheet = null)} role="presentation" transition:fade={{ duration: 150 }}></div>
+  <div class="absolute inset-x-0 bottom-0 z-40 rounded-t-[28px] bg-ink-2 border-t border-paper/10 px-5 pt-3 safe-b shadow-[0_-20px_60px_rgba(0,0,0,.6)]" transition:fly={{ y: 360, duration: 400, easing: cubicOut }}>
+    <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-paper/20"></div>
+    <div class="font-display text-[24px] leading-tight">{fog.credits === 0 ? 'Out of credits' : 'Credits'}</div>
+    <div class="text-[13px] text-paper/55 mt-1">You have <b class="text-paper">{fog.credits}</b> ✦. A drawing attempt costs 1, peeking into the fog costs {PEEK_COST}. You've uncovered {fog.seenPct}% of the drawing.</div>
+    <div class="mt-4 grid grid-cols-3 gap-2">
+      {#each PACKS as p}
+        <button class="relative rounded-2xl bg-ink-3 border {p.note ? 'border-coral' : 'border-paper/10'} px-2 py-3 text-center" onclick={() => { fog.credits += p.n; app.sheet = null; app.toast(`Mock purchase: +${p.n} credits`); }}>
+          {#if p.note}<div class="absolute -top-2 inset-x-0 mx-auto w-fit rounded-full bg-coral px-2 text-[10px] font-semibold text-ink">{p.note}</div>{/if}
+          <div class="text-[22px] font-semibold"><span class="text-coral">✦</span> {p.n}</div>
+          <div class="text-[13px] text-paper/60">{p.price}</div>
+        </button>
+      {/each}
+    </div>
+    <button class="mt-3 w-full rounded-2xl bg-ink py-3 text-[14px] text-paper/70 border border-paper/10" onclick={() => (app.sheet = null)}>Not now</button>
+    <div class="mt-2 text-center text-[11px] text-paper/35">Mockup: nothing is charged.</div>
   </div>
 {/if}
 

@@ -4,6 +4,8 @@
   import { world, key } from '../lib/world.svelte';
   import { app } from '../lib/app.svelte';
   import ObjectArt from './ObjectArt.svelte';
+  import FogLayer from './FogLayer.svelte';
+  import { fog, visMask, FX0, FY0, FN, FK } from '../lib/fog.svelte';
 
   const cam = $derived(app.cam.current);
   const img = $derived(app.img);
@@ -18,7 +20,16 @@
   function secs(ms: number) { const s = Math.ceil(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
 
   const grid = $derived(`background-size:${T * cam.s}px ${T * cam.s}px;background-position:${app.vw / 2 - cam.x * cam.s}px ${app.vh / 2 - cam.y * cam.s}px;`);
-  const mt = $derived(app.mine);
+  const vm = $derived(fog.visMap);
+  const vis = (c: number, r: number) => vm.get(key(c, r)) ?? 2;
+  const hazy = $derived(world.filled.filter((t) => vis(t.c, t.r) <= 1));
+  const clear = $derived(world.filled.filter((t) => vis(t.c, t.r) === 0));
+  const box = `left:${FX0 * T}px;top:${FY0 * T}px;width:${FN * T}px;height:${FK * T}px;`;
+  const maskCss = (url: string) => `-webkit-mask-image:url(${url});mask-image:url(${url});-webkit-mask-size:100% 100%;mask-size:100% 100%;`;
+  const clearMask = $derived(maskCss(visMask(vm, 0)));
+  const hazeMask = $derived(maskCss(visMask(vm, 1)));
+  // tile position inside a fog-box layer
+  const at = (c: number, r: number) => `left:${(c - FX0) * T - 0.5}px;top:${(r - FY0) * T - 0.5}px;width:${T + 1}px;height:${T + 1}px;`;
 </script>
 
 <!-- infinite dotted grid -->
@@ -26,22 +37,37 @@
 
 <div class="absolute left-0 top-0 origin-top-left will-change-transform" style="transform:translate3d({app.vw / 2}px,{app.vh / 2}px,0) scale({cam.s}) translate3d({-cam.x}px,{-cam.y}px,0)">
   <!-- tiles that will open later -->
-  {#each frontier as f (key(f.c, f.r))}
+  {#each frontier.filter((f) => vis(f.c, f.r) <= 1) as f (key(f.c, f.r))}
     <div class="absolute rounded-[10px] border-2 border-dashed border-paper/10 flex items-center justify-center" style="left:{f.c * T + 10}px;top:{f.r * T + 10}px;width:{T - 20}px;height:{T - 20}px">
       <svg width="34" height="34" viewBox="0 0 24 24" class="opacity-20"><path fill="currentColor" d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 0 1 6 0v3H9Z"/></svg>
     </div>
   {/each}
 
-  <div class="absolute left-0 top-0 transition-[filter] duration-700" style="filter:{app.fogged ? 'blur(10px) saturate(.8)' : 'none'}">
+  <!-- dark: only colour blobs glow through the fog -->
+  <div class="absolute" style="{box}filter:blur(28px)">
   {#each world.filled as t (key(t.c, t.r))}
-    <div class="absolute" style="left:{t.c * T - 0.5}px;top:{t.r * T - 0.5}px;width:{T + 1}px;height:{T + 1}px;{bg(t.c, t.r, app.fogged)}">
-      {#if t.obj !== undefined && !app.fogged}<ObjectArt obj={t.obj} />{/if}
+    <div class="absolute" style="{at(t.c, t.r)}{bg(t.c, t.r, true)}"></div>
+  {/each}
+  </div>
+  <!-- haze: blurred, readable as shapes and colours -->
+  <div class="absolute" style="{box}{hazeMask}">
+   <div class="absolute inset-0" style="filter:blur(9px) saturate(.75)">
+    {#each hazy as t (key(t.c, t.r))}
+      <div class="absolute" style="{at(t.c, t.r)}{bg(t.c, t.r)}"></div>
+    {/each}
+   </div>
+  </div>
+  <!-- clear: fully visible, feathered into the haze -->
+  <div class="absolute" style="{box}{clearMask}">
+  {#each clear as t (key(t.c, t.r))}
+    <div class="absolute" style="{at(t.c, t.r)}{bg(t.c, t.r)}" in:fade={{ duration: 900 }}>
+      {#if t.obj !== undefined}<ObjectArt obj={t.obj} />{/if}
       {#if t.fresh}<div class="absolute inset-0 bg-white pointer-events-none" style="animation:fadeflash 1.4s ease-out forwards"></div>{/if}
     </div>
   {/each}
   </div>
 
-  {#each world.list.filter((t) => t.status !== 'filled') as t (key(t.c, t.r))}
+  {#each world.list.filter((t) => t.status !== 'filled' && (t.mine || vis(t.c, t.r) <= 1)) as t (key(t.c, t.r))}
     {@const x = t.c * T}
     {@const y = t.r * T}
     {#if t.mine && (app.phase === 'drawing' || app.phase === 'review')}
@@ -65,7 +91,7 @@
           </div>
         {:else if app.phase === 'compose'}
           <div class="absolute inset-0 flex items-center justify-center">
-            <div class="text-center text-paper/35 text-[15px] leading-snug px-10">continue the drawing<br />from the edges</div>
+            <div class="text-center text-paper/35 text-[15px] leading-snug px-10">continue the drawing<br />from your neighbours</div>
           </div>
         {/if}
       </div>
@@ -86,6 +112,8 @@
     {/if}
   {/each}
 
+  <FogLayer />
+
   <!-- my finished tile glow -->
   {#if app.lastMine && (app.phase === 'reveal' || app.phase === 'explore')}
     {@const [c, r] = app.lastMine.split(',').map(Number)}
@@ -97,11 +125,6 @@
     <div class="absolute pointer-events-none border-[3px] border-paper rounded-[3px]" style="left:{c * T}px;top:{r * T}px;width:{T}px;height:{T}px"></div>
   {/if}
 
-  <!-- fog of war: only ~15% of each neighbour is visible while composing -->
-  {#if app.masked && mt}
-    <div out:fade={{ duration: 900 }} in:fade={{ duration: 600 }} class="absolute pointer-events-none rounded-[14px]"
-      style="left:{(mt.c - 0.15) * T}px;top:{(mt.r - 0.15) * T}px;width:{T * 1.3}px;height:{T * 1.3}px;box-shadow:0 0 0 200000px #0f0d17, inset 0 0 22px 10px #0f0d17"></div>
-  {/if}
 </div>
 
 <style>

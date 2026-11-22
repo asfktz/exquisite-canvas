@@ -21,7 +21,7 @@
 <div class="absolute inset-x-0 bottom-0 safe-b px-3">
   {#if app.phase === 'compose'}
     <div in:fly={{ y: 30, duration: 300 }}>
-      <div class="mb-2 text-center text-[13px] text-paper/50">You only see the edges of your neighbours. Continue them.</div>
+      <div class="mb-2 text-center text-[13px] text-paper/50">Your neighbours are clear, the ring beyond is hazy. Pinch to look around.</div>
       <div class="no-scrollbar -mx-3 mb-2 flex gap-2 overflow-x-auto px-3">
         {#each SUGGESTIONS as s}
           <button class="shrink-0 rounded-full border border-paper/15 bg-ink-2/80 px-3 py-1.5 text-[13px] text-paper/80 active:bg-ink-3" onclick={() => { app.prompt = s; app.touch(); ta?.focus(); }}>{s}</button>
