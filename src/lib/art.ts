@@ -2,8 +2,8 @@
 // Because every tile is a window into the same painting, neighbouring tiles always join up.
 
 export const T = 256; // world units per tile (== master px per tile)
-export const C0 = -5, C1 = 5; // column range (inclusive)
-export const R0 = -4, R1 = 4; // row range (inclusive)
+export const C0 = -6, C1 = 5; // column range (inclusive) — 3 zones of 4
+export const R0 = -4, R1 = 3; // row range (inclusive) — 2 zones of 4
 export const COLS = C1 - C0 + 1;
 export const ROWS = R1 - R0 + 1;
 export const W = COLS * T;

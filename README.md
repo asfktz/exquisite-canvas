@@ -1,5 +1,11 @@
 # Exquisite Canvas — clickable mockup
 
+> **Variant C · zone reveal** (this branch). The map is split into 4x4 zones. Revealed zones are visible to all;
+> the active zone stays hidden while people fill it, except the 8 tiles around each tile you drew. When the last
+> tile lands, every hidden tile flips open for everyone, the next zone opens, and contributors get +2 credits.
+> Each drawing (or redo) costs 1 credit; you start with 3 and a mock shop sells more. Others add a tile every 7s;
+> the ⋯ menu can fast-forward the zone so yours is the last tile, or empty your credits.
+
 A UX/layout mockup for a shared infinite-grid canvas in the spirit of the Surrealist "Exquisite Corpse" game, with AI.
 No backend, no real model: the artwork is one procedurally painted image sliced into tiles, and "generation" is a timed reveal.
 
