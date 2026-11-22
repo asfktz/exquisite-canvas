@@ -12,13 +12,20 @@
   const sketch = $derived(Math.min(1, p / 0.45));
   const paint = $derived(Math.max(0, Math.min(1, (p - 0.35) / 0.65)));
 
-  const bg = (c: number, r: number, fog = false) =>
-    img ? `background-image:url(${fog ? img.fog : img.full});background-size:${W}px ${H}px;background-position:${-(c - C0) * T}px ${-(r - R0) * T}px;` : '';
+  const bg = (c: number, r: number) =>
+    img ? `background-image:url(${img.full});background-size:${W}px ${H}px;background-position:${-(c - C0) * T}px ${-(r - R0) * T}px;` : '';
+
+  // B: one background per sharpness tier; all are the same painting at different resolutions
+  const TIER_FX = ['none', 'saturate(.9) brightness(.9)', 'saturate(.75) brightness(.72)', 'saturate(.6) brightness(.55)'];
+  const tierBg = (c: number, r: number, k: number) => {
+    if (!img) return '';
+    const url = [img.full, img.soft, img.shapes, img.colours][k];
+    return `background-image:url(${url});background-size:${W}px ${H}px;background-position:${-(c - C0) * T}px ${-(r - R0) * T}px;filter:${TIER_FX[k]};${k === 3 ? 'image-rendering:pixelated;' : ''}`;
+  };
 
   function secs(ms: number) { const s = Math.ceil(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
 
   const grid = $derived(`background-size:${T * cam.s}px ${T * cam.s}px;background-position:${app.vw / 2 - cam.x * cam.s}px ${app.vh / 2 - cam.y * cam.s}px;`);
-  const mt = $derived(app.mine);
 </script>
 
 <!-- infinite dotted grid -->
@@ -34,8 +41,12 @@
 
   <div class="absolute left-0 top-0 transition-[filter] duration-700" style="filter:{app.fogged ? 'blur(10px) saturate(.8)' : 'none'}">
   {#each world.filled as t (key(t.c, t.r))}
-    <div class="absolute" style="left:{t.c * T - 0.5}px;top:{t.r * T - 0.5}px;width:{T + 1}px;height:{T + 1}px;{bg(t.c, t.r, app.fogged)}">
-      {#if t.obj !== undefined && !app.fogged}<ObjectArt obj={t.obj} />{/if}
+    {@const tier = app.tierOf(t.c, t.r)}
+    <div class="absolute" style="left:{t.c * T - 0.5}px;top:{t.r * T - 0.5}px;width:{T + 1}px;height:{T + 1}px">
+      {#each [0, 1, 2, 3] as k}
+        <div class="absolute inset-0 transition-opacity duration-[1400ms] ease-out" style="{tierBg(t.c, t.r, k)}opacity:{tier === k ? 1 : 0}"></div>
+      {/each}
+      {#if t.obj !== undefined}<div class="absolute inset-0 transition-[filter] duration-[1400ms]" style="filter:blur({[0, 3, 10, 24][tier]}px)"><ObjectArt obj={t.obj} /></div>{/if}
       {#if t.fresh}<div class="absolute inset-0 bg-white pointer-events-none" style="animation:fadeflash 1.4s ease-out forwards"></div>{/if}
     </div>
   {/each}
@@ -65,7 +76,7 @@
           </div>
         {:else if app.phase === 'compose'}
           <div class="absolute inset-0 flex items-center justify-center">
-            <div class="text-center text-paper/35 text-[15px] leading-snug px-10">continue the drawing<br />from the edges</div>
+            <div class="text-center text-paper/35 text-[15px] leading-snug px-10">continue what<br />you see around you</div>
           </div>
         {/if}
       </div>
@@ -97,13 +108,21 @@
     <div class="absolute pointer-events-none border-[3px] border-paper rounded-[3px]" style="left:{c * T}px;top:{r * T}px;width:{T}px;height:{T}px"></div>
   {/if}
 
-  <!-- fog of war: only ~15% of each neighbour is visible while composing -->
-  {#if app.masked && mt}
-    <div out:fade={{ duration: 900 }} in:fade={{ duration: 600 }} class="absolute pointer-events-none rounded-[14px]"
-      style="left:{(mt.c - 0.15) * T}px;top:{(mt.r - 0.15) * T}px;width:{T * 1.3}px;height:{T * 1.3}px;box-shadow:0 0 0 200000px #0f0d17, inset 0 0 22px 10px #0f0d17"></div>
+  <!-- B: ripple when a new ring comes into focus -->
+  {#if app.ripple}
+    {#key app.ripple.id}
+      {@const rp = app.ripple}
+      <div class="absolute pointer-events-none rounded-[18px] border-[6px] border-paper/80"
+        style="left:{(rp.c + 0.5) * T}px;top:{(rp.r + 0.5) * T}px;--from:{(rp.from * 2 + 1) * T}px;--to:{(rp.to * 2 + 1) * T}px;animation:ring-grow 1.5s cubic-bezier(.2,.7,.2,1) forwards"></div>
+    {/key}
   {/if}
 </div>
 
 <style>
   @keyframes -global-fadeflash { 0% { opacity: .85 } 100% { opacity: 0 } }
+  @keyframes -global-ring-grow {
+    0% { width: var(--from); height: var(--from); transform: translate(-50%, -50%); opacity: 0; }
+    15% { opacity: 1; }
+    100% { width: var(--to); height: var(--to); transform: translate(-50%, -50%); opacity: 0; }
+  }
 </style>

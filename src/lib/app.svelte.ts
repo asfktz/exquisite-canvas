@@ -1,7 +1,12 @@
 import { Tween } from 'svelte/motion';
 import { cubicInOut, cubicOut, linear } from 'svelte/easing';
-import { T } from './art';
+import { T, type Paint } from './art';
 import { world, key, randomPerson, type Tile } from './world.svelte';
+
+export type Tier = 0 | 1 | 2 | 3; // sharp, soft, shapes, colours
+export const TIER_NAMES = ['Sharp', 'Soft', 'Shapes', 'Colours'] as const;
+export const START_CREDITS = 4;
+export const RING_PRICE = 3;
 
 export type Phase = 'intro' | 'compose' | 'drawing' | 'review' | 'reveal' | 'explore' | 'released';
 export type Variant = 1 | 2 | 3;
@@ -29,20 +34,63 @@ class AppState {
   prompt = $state('');
   obj = $state(0);
   tries = $state<number[]>([]);
-  sheet = $state<null | 'share' | 'info'>(null);
+  sheet = $state<null | 'share' | 'info' | 'credits'>(null);
   selected = $state<string | null>(null);
   toasts = $state<{ id: number; text: string; color?: string }[]>([]);
-  img = $state<{ full: string; fog: string } | null>(null);
+  img = $state<Paint | null>(null);
   lastMine = $state<string | null>(null);
   revealCaption = $state(false);
+
+  // ---------- B: sharpness tiers ----------
+  credits = $state(START_CREDITS);
+  boughtRings = $state(0);
+  /** rings that are in focus around each of your tiles; lags behind on submit so the sharpening is animated */
+  clarity = $state(1);
+  ripple = $state<{ c: number; r: number; from: number; to: number; id: number } | null>(null);
+
+  /** tiles that anchor your view: everything you drew, plus the tile you're drawing now */
+  get anchors() { return world.list.filter((t) => t.mine || t.author?.name === 'You'); }
+  get myCount() { return world.filled.filter((t) => t.author?.name === 'You').length; }
+  get targetClarity() { return 1 + this.myCount + this.boughtRings; }
+
+  tierOf(c: number, r: number): Tier {
+    const a = this.anchors;
+    if (!a.length) return 3;
+    const d = Math.min(...a.map((t) => Math.max(Math.abs(t.c - c), Math.abs(t.r - r))));
+    return Math.max(0, Math.min(3, d - this.clarity)) as Tier;
+  }
+  get tierCounts() {
+    const n = [0, 0, 0, 0];
+    for (const t of world.filled) n[this.tierOf(t.c, t.r)]++;
+    return n;
+  }
+
+  buyRing() {
+    if (this.credits < RING_PRICE) { this.sheet = 'credits'; return; }
+    this.credits -= RING_PRICE;
+    this.boughtRings++;
+    this.sharpen(this.lastMine ?? (this.anchors[0] ? key(this.anchors[0].c, this.anchors[0].r) : null));
+    this.sheet = null; this.selected = null;
+    this.toast(`Ring ${this.clarity + 1} is now in focus · −${RING_PRICE} credits`);
+  }
+
+  buyCredits(n: number) { this.credits += n; this.sheet = null; this.toast(`+${n} credits (mock purchase, nothing charged)`); }
+
+  /** bring clarity up to target, with a ripple from the given tile */
+  sharpen(from: string | null) {
+    const to = this.targetClarity;
+    if (to === this.clarity) return;
+    if (from) { const [c, r] = from.split(',').map(Number); this.ripple = { c, r, from: this.clarity, to, id: Math.random() }; }
+    this.clarity = to;
+  }
 
   cam = new Tween({ x: 0, y: 0, s: 0.3 }, { duration: 900, easing: cubicInOut });
   progress = new Tween(0, { duration: 3800, easing: linear });
 
   get mine(): Tile | null { return world.mineKey ? world.tiles[world.mineKey] : null; }
-  get fogged() { return this.phase === 'intro'; }
+  get fogged() { return false; } // B replaces the old blur fog with tiers
   get masked() { return this.phase === 'compose' || this.phase === 'drawing' || this.phase === 'review'; }
-  get gesturesOn() { return this.phase === 'explore' || (this.phase === 'intro' && this.variant === 3); }
+  get gesturesOn() { return this.phase === 'explore' || this.phase === 'compose' || (this.phase === 'intro' && this.variant === 3); }
   get lockLeft() { return Math.max(0, this.lockUntil - this.now); }
   get idle() { return this.now - this.lastActive; }
   get idleWarn() { return (this.phase === 'compose' || this.phase === 'review') && this.idle > IDLE_WARN_MS; }
@@ -67,7 +115,8 @@ class AppState {
   composeTarget(t: Tile) {
     const i = this.insets();
     const w = this.vw - i.l - i.r, h = this.vh - i.t - i.b;
-    const s = Math.min(2.4, Math.min(w, h) / (T * 1.3));
+    // B: pull back so all 8 neighbours fit (mostly) and the blurrier rings peek in around them
+    const s = Math.min(1.2, Math.min(w, h) / (T * 3));
     const cx = (t.c + 0.5) * T, cy = (t.r + 0.5) * T;
     return { x: cx - (i.l + w / 2 - this.vw / 2) / s, y: cy - (i.t + h / 2 - this.vh / 2) / s, s };
   }
@@ -92,6 +141,7 @@ class AppState {
     world.reset();
     this.prompt = ''; this.tries = []; this.sheet = null; this.selected = null; this.lastMine = null; this.revealCaption = false;
     this.progress.set(0, { duration: 0 });
+    this.credits = START_CREDITS; this.boughtRings = 0; this.clarity = 1; this.ripple = null;
     this.phase = 'intro';
     if (this.variant === 3) world.assign();
     this.cam.set(this.fitAll(0.8, this.variant === 3 ? 170 : 0), { duration: 0 });
@@ -122,6 +172,8 @@ class AppState {
   async draw() {
     if (!this.prompt.trim()) return;
     this.touch();
+    if (this.credits <= 0) { this.sheet = 'credits'; return; }
+    this.credits--;
     this.obj = this.pickObj(this.prompt);
     this.tries = [...this.tries, this.obj];
     this.phase = 'drawing';
@@ -141,6 +193,7 @@ class AppState {
     if (!t) return;
     this.lastMine = k;
     this.phase = 'reveal';
+    setTimeout(() => this.sharpen(k), 900);
     setTimeout(() => { this.revealCaption = true; this.cam.set(this.fitAll(0.5, 260), { duration: 2600, easing: cubicInOut }); }, 500);
     setTimeout(() => { this.sheet = 'share'; }, 3300);
   }

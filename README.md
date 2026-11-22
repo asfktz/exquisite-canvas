@@ -20,6 +20,15 @@ SINGLE=1 npm run build   # one self-contained dist/index.html
 
 Concurrency is simulated: only 6 empty tiles are open at a time, other "artists" hold locks and finish tiles in the background, and idling releases your tile (45s warning, 65s release; the ⋯ menu can simulate it).
 
+## Variant B: sharpness tiers (this branch)
+Nothing is hidden, but you only see it at different levels of sharpness, measured in square rings around your tiles:
+- **Sharp**: all 8 neighbours of your tile at first (instead of 15% edges).
+- **Soft** (next ring): low-res, you can tell what's there but not the details.
+- **Shapes** (ring after): darker blobs.
+- **Colours** (everything else): 2×2 pixel colour blocks. Before you have a tile, the whole map looks like this.
+
+Each tile you submit brings one more ring into focus (with a ripple). Mock credits: start with 4, 1✦ per drawing attempt (including "Again"), 3✦ to sharpen a ring without drawing, plus a fake credit shop. Tapping an out-of-focus tile in explore offers "Sharpen" or "Draw a tile". While composing you can drag/pinch to look around. The ⋯ menu adds "Out of credits" and "+1 ring" simulations.
+
 ## Layout variants (⋯ menu or `?v=`)
 - **1 Immersive**: splash, then straight into the tile; chat-style prompt bar.
 - **2 Guided**: tile on top, step sheet listing what the neighbours drew.

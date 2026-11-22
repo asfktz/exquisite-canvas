@@ -1,7 +1,7 @@
 <script lang="ts">
   import { fly, fade } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
-  import { app } from '../lib/app.svelte';
+  import { app, RING_PRICE, TIER_NAMES } from '../lib/app.svelte';
   import { world, key } from '../lib/world.svelte';
   import { secs } from '../lib/bits';
   import TileThumb from './TileThumb.svelte';
@@ -56,7 +56,20 @@
 {#if app.sheet === 'info' && sel}
   <div class="absolute inset-x-0 bottom-0 z-30 px-3 safe-b" transition:fly={{ y: 200, duration: 300 }}>
     <div class="mx-auto max-w-md rounded-3xl bg-ink-2/95 backdrop-blur border border-paper/10 p-4 shadow-2xl">
-      {#if sel.status === 'filled'}
+      {#if sel.status === 'filled' && app.tierOf(sel.c, sel.r) > 0}
+        {@const tier = app.tierOf(sel.c, sel.r)}
+        <div class="flex gap-3 items-center">
+          <div class="h-16 w-16 shrink-0 rounded-[10px] bg-ink-3 flex items-center justify-center text-[26px] text-paper/40" style="filter:blur({tier}px)">◌</div>
+          <div class="min-w-0 flex-1">
+            <div class="text-[15px]">Out of focus <span class="text-paper/45">· {TIER_NAMES[tier].toLowerCase()}</span></div>
+            <div class="mt-1 text-[13px] text-paper/55 leading-snug">This tile is {tier} ring{tier > 1 ? 's' : ''} past what you can see. Draw a tile closer to it, or sharpen your view.</div>
+          </div>
+        </div>
+        <div class="mt-3 grid grid-cols-2 gap-2">
+          <button class="rounded-xl bg-ink-3 py-2.5 text-[14px]" onclick={() => app.buyRing()}>Sharpen · {RING_PRICE}✦</button>
+          <button class="rounded-xl bg-coral text-ink font-semibold py-2.5 text-[14px]" onclick={() => app.startCompose()}>Draw a tile</button>
+        </div>
+      {:else if sel.status === 'filled'}
         <div class="flex gap-3">
           <TileThumb c={sel.c} r={sel.r} obj={sel.obj} size={64} />
           <div class="min-w-0 flex-1">
@@ -81,6 +94,29 @@
         <button class="w-full rounded-xl bg-coral py-3 text-[15px] font-semibold text-ink" onclick={() => app.startCompose(app.selected!)}>Draw this tile ✦</button>
       {/if}
     </div>
+  </div>
+{/if}
+
+{#if app.sheet === 'credits'}
+  <div class="absolute inset-0 z-30 bg-ink/50" onclick={() => (app.sheet = null)} role="presentation" transition:fade={{ duration: 150 }}></div>
+  <div class="absolute inset-x-0 bottom-0 z-30 rounded-t-[28px] bg-ink-2 border-t border-paper/10 px-5 pt-3 safe-b shadow-[0_-20px_60px_rgba(0,0,0,.6)]" transition:fly={{ y: 320, duration: 400, easing: cubicOut }}>
+    <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-paper/20"></div>
+    <div class="flex items-baseline justify-between">
+      <div class="font-display text-[24px]">{app.credits === 0 ? 'Out of credits' : 'Credits'}</div>
+      <div class="text-[14px] text-paper/60"><span class="text-coral">✦</span> <b class="text-paper tabular-nums">{app.credits}</b> left</div>
+    </div>
+    <div class="mt-1 text-[13px] text-paper/55 leading-snug">1✦ per drawing attempt. {RING_PRICE}✦ sharpens one more ring of the map without drawing.</div>
+    <div class="mt-4 grid grid-cols-3 gap-2">
+      {#each [[10, '$1.99', ''], [30, '$4.99', 'popular'], [100, '$12.99', 'best value']] as [n, price, tag]}
+        <button class="relative rounded-2xl border {tag === 'popular' ? 'border-coral bg-coral/10' : 'border-paper/15 bg-ink-3'} px-2 pt-4 pb-3 text-center" onclick={() => app.buyCredits(n as number)}>
+          {#if tag}<div class="absolute -top-2 inset-x-0 mx-auto w-fit rounded-full bg-coral px-2 text-[10px] font-semibold text-ink">{tag}</div>{/if}
+          <div class="text-[22px] font-semibold"><span class="text-coral text-[16px]">✦</span>{n}</div>
+          <div class="text-[13px] text-paper/60">{price}</div>
+        </button>
+      {/each}
+    </div>
+    <button class="mt-3 w-full rounded-2xl bg-ink-3 py-3 text-[14px] text-paper/80" onclick={() => app.buyCredits(1)}>Watch an ad for 1✦ (mock)</button>
+    <div class="mt-2 text-center text-[11px] text-paper/35">Mockup only. Nothing is charged.</div>
   </div>
 {/if}
 

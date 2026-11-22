@@ -23,7 +23,9 @@ function ridge(y0: number, parts: [number, number, number][]): Ridge {
   return (x) => y0 + parts.reduce((s, [a, f, p]) => s + a * Math.sin(x * f + p), 0);
 }
 
-export async function paintMaster(): Promise<{ full: string; fog: string }> {
+export interface Paint { full: string; fog: string; soft: string; shapes: string; colours: string }
+
+export async function paintMaster(): Promise<Paint> {
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
   const g = cv.getContext('2d')!;
@@ -195,7 +197,29 @@ export async function paintMaster(): Promise<{ full: string; fog: string }> {
   small.width = COLS * 10; small.height = ROWS * 10;
   small.getContext('2d')!.drawImage(cv, 0, 0, small.width, small.height);
   const fog = await toUrl(small, 0.8);
-  return { full, fog };
+
+  // sharpness tiers: low-res copies of the whole painting. The browser upscales them when used as
+  // tile backgrounds, so neighbouring tiles of the same tier still join up without seams.
+  const soft = await toUrl(shrink(cv, 18), 0.85);    // 18px per tile: you can tell what it is, not the details
+  const shapes = await toUrl(shrink(cv, 5), 0.85);   // 5px per tile: blobs and shapes
+  const colours = await toUrl(shrink(cv, 2), 0.92);  // 2x2 colour blocks per tile (shown pixelated)
+  return { full, fog, soft, shapes, colours };
+}
+
+/** progressive halving keeps the downscale smooth (averaged), not aliased */
+function shrink(src: HTMLCanvasElement, perTile: number) {
+  const tw = COLS * perTile, th = ROWS * perTile;
+  let cur: HTMLCanvasElement = src;
+  while (cur.width / 2 > tw) {
+    const n = document.createElement('canvas');
+    n.width = Math.round(cur.width / 2); n.height = Math.round(cur.height / 2);
+    const g = n.getContext('2d')!; g.imageSmoothingQuality = 'high'; g.drawImage(cur, 0, 0, n.width, n.height);
+    cur = n;
+  }
+  const out = document.createElement('canvas');
+  out.width = tw; out.height = th;
+  const g = out.getContext('2d')!; g.imageSmoothingQuality = 'high'; g.drawImage(cur, 0, 0, tw, th);
+  return out;
 }
 
 function toUrl(cv: HTMLCanvasElement, q: number): Promise<string> {

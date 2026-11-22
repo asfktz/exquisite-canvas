@@ -2,7 +2,8 @@
   import { onMount } from 'svelte';
   import { fly, fade, scale } from 'svelte/transition';
   import { cubicOut, backOut } from 'svelte/easing';
-  import { app, IDLE_RELEASE_MS, type Variant } from './lib/app.svelte';
+  import { app, IDLE_RELEASE_MS, RING_PRICE, TIER_NAMES, type Variant } from './lib/app.svelte';
+  import { T } from './lib/art';
   import { world } from './lib/world.svelte';
   import { paintMaster } from './lib/art';
   import { panzoom } from './lib/gestures';
@@ -46,6 +47,14 @@
     if (app.masked && app.mine) app.cam.set(app.composeTarget(app.mine), { duration: 350 });
   });
 
+  // B: show a "back to my tile" chip once the user has panned away while composing
+  const drifted = $derived.by(() => {
+    if (app.phase !== 'compose' || !app.mine) return false;
+    const c = app.cam.current, m = app.mine;
+    return Math.hypot(c.x - (m.c + 0.5) * T, c.y - (m.r + 0.5) * T) * c.s > 140 || c.s < 0.3;
+  });
+  const tierSwatch = ['bg-paper', 'bg-paper/60', 'bg-paper/30', 'bg-paper/12'];
+
   const variants: { v: Variant; name: string; note: string }[] = [
     { v: 1, name: 'Immersive', note: 'Splash, then straight into your tile. Chat-style prompt bar.' },
     { v: 2, name: 'Guided', note: 'Tile on top, step-by-step sheet with what neighbours drew.' },
@@ -75,14 +84,14 @@
     <div class="absolute inset-0 z-20 flex items-end sm:items-center justify-center bg-gradient-to-t from-ink via-ink/70 to-ink/20 px-4 pb-8 safe-b" transition:fade={{ duration: 500 }}>
       <div class="w-full max-w-sm text-center" in:fly={{ y: 40, duration: 700, delay: 200, easing: cubicOut }}>
         <div class="font-display text-[46px] leading-none tracking-tight">Exquisite</div>
-        <div class="mt-3 text-[16px] text-paper/75 leading-relaxed">A drawing nobody planned. Each tile is drawn by a different person, who only sees the edges of their neighbours.</div>
+        <div class="mt-3 text-[16px] text-paper/75 leading-relaxed">A drawing nobody planned. Each tile is drawn by a different person, who sees their neighbours clearly and the rest only as a blur.</div>
         <div class="mt-4 flex items-center justify-center gap-4 text-[13px] text-paper/55">
           <span><b class="text-paper">{world.filled.length}</b> tiles</span>
           <span><b class="text-paper">{world.artists}</b> artists</span>
           <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-mint" style="animation:blink 1.4s infinite"></span><b class="text-paper">{world.drawingNow}</b> drawing now</span>
         </div>
         <button class="mt-6 w-full rounded-2xl bg-coral py-4 text-[17px] font-semibold text-ink active:scale-[.98] transition-transform" onclick={() => app.startCompose()}>Find me a spot ✦</button>
-        <div class="mt-3 text-[12px] text-paper/40">You'll get a tile for 5 minutes. The whole drawing is revealed when you're done.</div>
+        <div class="mt-3 text-[12px] text-paper/40">You'll see your neighbours clearly, the rest only as blurs and colours. Every tile you add brings the next ring into focus.</div>
       </div>
     </div>
   {/if}
@@ -90,7 +99,7 @@
   {#if ready && app.phase === 'intro' && app.variant === 3}
     <div class="absolute inset-x-0 top-0 safe-t px-5 pointer-events-none" in:fade>
       <div class="mt-2 font-display text-[30px] leading-none">Exquisite</div>
-      <div class="mt-1 text-[13px] text-paper/55">{world.filled.length} tiles · {world.drawingNow} drawing now · the picture stays hidden until you add yours</div>
+      <div class="mt-1 text-[13px] text-paper/55">{world.filled.length} tiles · {world.drawingNow} drawing now · sharp near your spot, blurrier further out</div>
     </div>
     <div class="absolute inset-x-0 bottom-0 z-10 px-3 safe-b" in:fly={{ y: 80, duration: 500 }}>
       <div class="mx-auto max-w-md rounded-3xl bg-ink-2/95 border border-paper/10 p-4 flex items-center gap-3">
@@ -109,8 +118,8 @@
   <!-- ===== reveal ===== -->
   {#if app.phase === 'reveal' && app.revealCaption}
     <div class="absolute inset-x-0 top-0 safe-t px-5 text-center pointer-events-none" in:fly={{ y: -20, duration: 800, delay: 600 }}>
-      <div class="mt-4 font-display text-[30px] leading-tight">The whole drawing</div>
-      <div class="text-[14px] text-paper/60">{world.filled.length} tiles by {world.artists} people. Yours is glowing.</div>
+      <div class="mt-4 font-display text-[30px] leading-tight">Ring {app.clarity} is in focus</div>
+      <div class="text-[14px] text-paper/60">You now see {app.tierCounts[0]} of {world.filled.length} tiles clearly. Add another to sharpen ring {app.clarity + 1}.</div>
     </div>
   {/if}
 
@@ -120,17 +129,36 @@
       <div class="mt-1 rounded-2xl bg-ink-2/85 backdrop-blur border border-paper/10 px-3.5 py-2 pointer-events-auto">
         <div class="font-display text-[19px] leading-none">Exquisite</div>
         <div class="text-[12px] text-paper/55 mt-1 flex items-center gap-1.5">{world.filled.length} tiles · <span class="h-1.5 w-1.5 rounded-full bg-mint" style="animation:blink 1.4s infinite"></span>{world.drawingNow} drawing</div>
+        <div class="mt-2 flex gap-2.5 text-[11px] text-paper/60">
+          {#each TIER_NAMES as n, i}
+            <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-[2px] {tierSwatch[i]}"></span>{n} <b class="text-paper/90 tabular-nums">{app.tierCounts[i]}</b></span>
+          {/each}
+        </div>
       </div>
     </div>
     {#if app.sheet !== 'info'}
       <div class="absolute inset-x-0 bottom-0 safe-b flex justify-center px-4" in:fly={{ y: 40 }}>
         <div class="flex items-center gap-2 rounded-full bg-ink-2/90 backdrop-blur border border-paper/10 p-1.5">
-          <button class="rounded-full px-4 py-2.5 text-[14px] text-paper/80" onclick={() => app.cam.set(app.fitAll(0.6), { duration: 700 })}>Fit</button>
+          <button class="rounded-full px-3 py-2.5 text-[14px] text-paper/80" onclick={() => app.cam.set(app.fitAll(0.6), { duration: 700 })}>Fit</button>
+          <button class="rounded-full border border-paper/15 px-3.5 py-2.5 text-[13px] text-paper/85" onclick={() => app.buyRing()}>Sharpen · {RING_PRICE}✦</button>
           <button class="rounded-full bg-coral px-5 py-2.5 text-[14px] font-semibold text-ink" onclick={() => app.startCompose()}>Draw another tile</button>
         </div>
       </div>
-      <div class="absolute bottom-[86px] inset-x-0 text-center text-[12px] text-paper/35 pointer-events-none safe-b">Drag, pinch, tap a tile</div>
+      <div class="absolute bottom-[86px] inset-x-0 text-center text-[12px] text-paper/35 pointer-events-none safe-b">Each tile you draw sharpens one more ring</div>
     {/if}
+  {/if}
+
+  {#if drifted}
+    <div class="absolute inset-x-0 z-20 flex justify-center pointer-events-none" style="top:calc(max(env(safe-area-inset-top),10px) + 50px)" transition:fade={{ duration: 200 }}>
+      <button class="pointer-events-auto rounded-full bg-paper text-ink px-4 py-2 text-[13px] font-semibold shadow-xl" onclick={() => app.mine && app.cam.set(app.composeTarget(app.mine), { duration: 600 })}>↩ Back to my tile</button>
+    </div>
+  {/if}
+
+  <!-- B: mock credits -->
+  {#if ready}
+    <button class="absolute right-12 z-40 h-9 rounded-full bg-ink-2/85 border border-paper/10 pl-2.5 pr-3 flex items-center gap-1.5 text-[13px] {app.credits === 0 ? 'text-coral' : ''}" style="top:max(env(safe-area-inset-top),10px)" onclick={() => (app.sheet = app.sheet === 'credits' ? null : 'credits')} aria-label="Credits">
+      <span class="text-coral">✦</span><b class="tabular-nums">{app.credits}</b>
+    </button>
   {/if}
 
   <Sheets />
@@ -149,6 +177,8 @@
   {#if menu}
     <div class="absolute inset-0 z-50 bg-ink/50" onclick={() => (menu = false)} role="presentation" transition:fade={{ duration: 150 }}></div>
     <div class="absolute right-2 z-50 w-[min(320px,calc(100vw-16px))] rounded-3xl bg-ink-2 border border-paper/10 p-3 shadow-2xl" style="top:calc(max(env(safe-area-inset-top),10px) + 44px)" transition:scale={{ start: 0.92, duration: 200, easing: backOut }}>
+      <div class="px-2 pb-1 text-[11px] uppercase tracking-widest text-coral/80">Variant B · Sharpness tiers</div>
+      <div class="px-2 pb-2 text-[12px] text-paper/50">Ring 1 around you is sharp, then soft, then shapes, then colours. Each tile you add (or {RING_PRICE} credits) sharpens one more ring.</div>
       <div class="px-2 pb-2 text-[11px] uppercase tracking-widest text-paper/40">Layout variant</div>
       {#each variants as x}
         <button class="w-full text-left rounded-2xl px-3 py-2.5 {app.variant === x.v ? 'bg-ink-3' : ''}" onclick={() => { app.setVariant(x.v); menu = false; }}>
@@ -163,6 +193,8 @@
         <button class="rounded-xl bg-ink-3 px-2 py-2 text-[12px]" onclick={() => { app.lastActive = Date.now() - 46000; menu = false; }}>I went idle</button>
         <button class="rounded-xl bg-ink-3 px-2 py-2 text-[12px]" onclick={() => { app.explore(); menu = false; }}>Skip to explore</button>
         <button class="rounded-xl bg-ink-3 px-2 py-2 text-[12px]" onclick={() => { app.restart(); menu = false; }}>Restart</button>
+        <button class="rounded-xl bg-ink-3 px-2 py-2 text-[12px]" onclick={() => { app.credits = 0; menu = false; }}>Out of credits</button>
+        <button class="rounded-xl bg-ink-3 px-2 py-2 text-[12px]" onclick={() => { app.boughtRings++; app.sharpen(app.lastMine ?? world.mineKey); menu = false; }}>+1 ring (free)</button>
       </div>
     </div>
   {/if}
