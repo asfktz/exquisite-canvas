@@ -1,5 +1,8 @@
 # Exquisite Canvas — clickable mockup
 
+> **Branch variant D: weekly seasons.** One shared world. Each week a new region opens at the edge and stays in the fog while it's being drawn: you only see the full ring of tiles around your own tiles (plus every past week). When the week ends, the region is revealed to everyone at once as a shared moment, and the next region opens. In the mockup a week is 4 minutes (⋯ → *End the week now* to jump). Each try costs 1 mock credit; +2 free credits every new week.
+
+
 A UX/layout mockup for a shared infinite-grid canvas in the spirit of the Surrealist "Exquisite Corpse" game, with AI.
 No backend, no real model: the artwork is one procedurally painted image sliced into tiles, and "generation" is a timed reveal.
 
