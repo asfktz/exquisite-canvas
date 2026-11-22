@@ -32,7 +32,7 @@ class AppState {
   sheet = $state<null | 'share' | 'info'>(null);
   selected = $state<string | null>(null);
   toasts = $state<{ id: number; text: string; color?: string }[]>([]);
-  img = $state<{ full: string; fog: string } | null>(null);
+  img = $state<{ full: string; fog: string; sketch?: string } | null>(null);
   lastMine = $state<string | null>(null);
   revealCaption = $state(false);
 

@@ -23,7 +23,7 @@ function ridge(y0: number, parts: [number, number, number][]): Ridge {
   return (x) => y0 + parts.reduce((s, [a, f, p]) => s + a * Math.sin(x * f + p), 0);
 }
 
-export async function paintMaster(): Promise<{ full: string; fog: string }> {
+export async function paintMaster(): Promise<{ full: string; fog: string; sketch: string }> {
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
   const g = cv.getContext('2d')!;
@@ -195,9 +195,34 @@ export async function paintMaster(): Promise<{ full: string; fog: string }> {
   small.width = COLS * 10; small.height = ROWS * 10;
   small.getContext('2d')!.drawImage(cv, 0, 0, small.width, small.height);
   const fog = await toUrl(small, 0.8);
-  return { full, fog };
+  const sketch = await toUrl(pencil(cv), 0.8);
+  return { full, fog, sketch };
 }
 
 function toUrl(cv: HTMLCanvasElement, q: number): Promise<string> {
   return new Promise((res) => cv.toBlob((b) => res(URL.createObjectURL(b!)), 'image/jpeg', q));
+}
+
+/** pencil-sketch version of the painting: Sobel edges as graphite on warm paper */
+function pencil(src: HTMLCanvasElement) {
+  const w = src.width >> 1, h = src.height >> 1;
+  const sm = document.createElement('canvas'); sm.width = w; sm.height = h;
+  const sg = sm.getContext('2d')!;
+  sg.filter = 'blur(1px)'; sg.drawImage(src, 0, 0, w, h); sg.filter = 'none';
+  const id = sg.getImageData(0, 0, w, h), d = id.data;
+  const L = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) L[i] = d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11;
+  const out = sg.createImageData(w, h), o = out.data;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = y * w + x;
+    const at = (dx: number, dy: number) => L[Math.min(h - 1, Math.max(0, y + dy)) * w + Math.min(w - 1, Math.max(0, x + dx))];
+    const gx = -at(-1, -1) - 2 * at(-1, 0) - at(-1, 1) + at(1, -1) + 2 * at(1, 0) + at(1, 1);
+    const gy = -at(-1, -1) - 2 * at(0, -1) - at(1, -1) + at(-1, 1) + 2 * at(0, 1) + at(1, 1);
+    const e = Math.min(1, Math.hypot(gx, gy) / 160);
+    const shade = (1 - L[i] / 255) * 0.22; // light hatching tone
+    const k = Math.min(1, e * 1.3 + shade + (Math.random() - 0.5) * 0.04);
+    o[i * 4] = 244 - k * 200; o[i * 4 + 1] = 236 - k * 205; o[i * 4 + 2] = 222 - k * 200; o[i * 4 + 3] = 255;
+  }
+  sg.putImageData(out, 0, 0);
+  return sm;
 }
