@@ -9,6 +9,8 @@ export interface PanZoomOpts {
   onTap?: (sx: number, sy: number) => void;
   onActivity?: () => void;
   minS?: number; maxS?: number;
+  /** Listen to touch events instead of pointer events (default true). Set false so mouse taps work too. */
+  touchEvents?: boolean;
 }
 
 /** Svelte action: drag to pan, pinch / wheel to zoom about the pointer, tap to select. */
@@ -57,7 +59,7 @@ export const panzoom: Action<HTMLElement, PanZoomOpts> = (node, initial) => {
       }
     },
   }, {
-    drag: { filterTaps: true, pointer: { touch: true } },
+    drag: { filterTaps: true, pointer: { touch: initial.touchEvents ?? true } },
     pinch: { scaleBounds: { min: 0.01, max: 100 }, rubberband: false },
     wheel: { eventOptions: { passive: false } },
   });

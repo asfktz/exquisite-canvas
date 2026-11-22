@@ -27,3 +27,20 @@ Concurrency is simulated: only 6 empty tiles are open at a time, other "artists"
 
 ## Stack
 Vite + Svelte 5 + TypeScript, Tailwind 4, Svelte `Tween` / transitions, `@use-gesture/vanilla` via a Svelte action (`src/lib/gestures.ts`). The grid is a CSS-transformed div.
+
+## Behaviour wireframe (`wireframe.html`)
+
+A gray, animation-free wireframe that tests only the rules and the flow, in Hebrew (RTL).
+
+```bash
+npm run dev                              # http://localhost:5173/wireframe.html
+SINGLE=1 ENTRY=wireframe npm run build   # one self-contained dist/wireframe.html
+```
+
+Rules: a cell is filled, empty, or claimed. You can draw in any empty cell touching at least one filled cell, including holes in the middle (blue, labelled with how many sides they touch; a thick bar marks each touching side).
+
+Flow: enter, find (pan / pinch / wheel, or "find me a spot"), claim (3 min lock, 650ms fake round trip so others can win), prompt, attempt / retry (1 mock credit each), confirm, newly opened cells are marked. After confirming: share a "continue from me" link (reserves the adjacent cell for the friend for 10 min, then a simulated friend fills it and you're notified), draw another adjacent, or back to the map.
+
+Edge cases: lost race on claim, out of credits mid-flow (keep the cell, top up, confirm as is, or release), leaving without confirming (confirm and leave, keep it for 1 min, or release), lock running out (warning at 30s, one +2 min extension).
+
+The ⚙ panel switches entry (organic vs. from a friend's link), where organic entry starts (whole map, recent activity, straight to a free cell), credits, time speed, forced claim race, and simulated users. Code: `src/wireframe/`.
